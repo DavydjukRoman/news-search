@@ -1,0 +1,11 @@
+version: "2.1"
+
+services:
+  news-search-app:
+    build:
+      context: news-search-app/
+    command: flask run --host 0.0.0.0
+    volumes:
+      - ./news-search-app/:/app
+    ports:
+      - 5000:5000
