@@ -5,85 +5,140 @@
 #                 yield json.load(open_file)
 #
 # helpers.bulk(es, load_json('/news-search/existing-files/'), index='my-index', doc_type='my-type')
-import ast
 import os
 import json
 from datetime import datetime
-
+from typing import List, Dict
+from abc import ABC, abstractmethod
 from elasticsearch import Elasticsearch, helpers
 
-print("Hello loader")
+from dataclasses import dataclass
 
 
+@dataclass()
 class News(object):
-    def __init__(self, category: str, headline: str, authors: str,
-                 link: str, short_description: str, date: str):
-        self.category = category
-        self.headline = headline
-        self.authors = authors
-        self.link = link
-        self.short_description = short_description
-        self.date = datetime.fromisoformat(date)
+    category: str
+    headline: str
+    authors:  str
+    link:     str
+    short_description: str
+    date:     datetime
 
-    def __str__(self):
-        return self.headline
 
-    def get_dict(self):
+class NewsSource(ABC):
+    @abstractmethod
+    def read(self) -> List[News]:
+        ...
+
+
+class NewsStorage(ABC):
+    @abstractmethod
+    def store(self, news: List[News]):
+        ...
+
+    @abstractmethod
+    def clean(self):
+        ...
+
+
+class NewsDeserializer(ABC):
+    @abstractmethod
+    def deserialize(self, row: str) -> News:
+        ...
+
+
+class NewsSerializer(ABC):
+    @abstractmethod
+    def serialize(self, news: News):
+        ...
+
+
+class DictNewsSerializer(NewsSerializer):
+    def serialize(self, news: News) -> Dict[str, str]:
         return {
-            'category': self.category,
-            'headline': self.headline,
-            'authors': self.authors,
-            'link': self.link,
-            'short_description': self.short_description,
-            'date': self.date.isoformat(),
+            'category': news.category,
+            'headline': news.headline,
+            'authors': news.authors,
+            'link': news.link,
+            'short_description': news.short_description,
+            'date': news.date.isoformat(),
         }
 
-    def get_json(self):
+
+class JsonNewsSerializer(NewsSerializer):
+    def serialize(self, news: News) -> str:
         return json.dumps({
-            'category': self.category,
-            'headline': self.headline,
-            'authors': self.authors,
-            'link': self.link,
-            'short_description': self.short_description,
-            'date': self.date.isoformat(),
+            'category': news.category,
+            'headline': news.headline,
+            'authors': news.authors,
+            'link': news.link,
+            'short_description': news.short_description,
+            'date': news.date.isoformat(),
         })
 
 
-class FilesManager:
-    def import_files(self, files_path: str, file_index: str):
-        for file_name in os.listdir(files_path):
-            if file_name.endswith('.json'):
-                print('File name is:', file_name)
-                self._import_json(f"{files_path}/{file_name}", file_index)
-            # else:
-            #     raise ValueError
+class FilesNewsSource(NewsSource):
+    def __init__(self, path: str, deserializer: NewsDeserializer):
+        self.path = path
+        self.deserializer = deserializer
 
-    def _import_json(self, file_path, file_index):
-        with open(file_path, 'r') as json_file:
-            export_manager = ExportManager()
-            export_manager.load_data_list(
-                file_index=file_index,
-                data_list=list(json_file.readlines())[:100]
-            )
+    def read(self) -> List[News]:
+        with open(self.path, 'r') as json_file:
+            return [self.deserializer.deserialize(row) for row in json_file.readlines()]
 
 
-class ExportManager:
-    def __init__(self):
-        self.es = Elasticsearch(f"{os.environ['ES_HOST']}:{os.environ['ES_PORT']}",
-                                http_auth=('elastic', 'changeme'))
+class JsonNewsDeserializer(NewsDeserializer):
+    def deserialize(self, row: str) -> News:
+        return News(**json.loads(row))
 
-    def load_data_list(self, file_index: str, data_list: list):
+
+class PostgresNewsSource(NewsSource):
+
+    def read(self) -> List[News]:
+        # ToDo: learn postgre
+        ...
+
+
+class ElasticSearchNewsStorage(NewsStorage):
+
+    def __init__(self, es_host, es_port, es_user, es_pass, index: str, serializer: DictNewsSerializer):
+        self.index = index
+        self.es = Elasticsearch(f"{es_host}:{es_port}", http_auth=(es_user, es_pass))
+        self.serializer = serializer
+
+    def store(self, news: List[News]):
         helpers.bulk(
             client=self.es,
             actions=[
                 {
                     '_op_type': 'index',
-                    "_index": file_index,
-                    "_source": News(**json.loads(row)).get_dict()
-                } for row in data_list
+                    "_index": self.index,
+                    "_source": self.serializer.serialize(new)
+                } for new in news
             ]
         )
 
+    def clean(self):
+        # TODO can we delete all elements, not index
+        self.es.indices.delete(index=self.index)
 
-manager = FilesManager()
-manager.import_files('data', 'news-set-test')
+
+def load(source: NewsSource, storage: NewsStorage):
+    news: List[News] = source.read()
+    storage.store(news)
+
+
+load(
+    FilesNewsSource(
+        'data/News_Category_Dataset_v2.json',
+        JsonNewsDeserializer()),
+    ElasticSearchNewsStorage(
+        es_host=os.environ['ES_HOST'],
+        es_port=os.environ['ES_PORT'],
+        es_user='elastic',
+        es_pass='changeme',
+        index='news-set-test-v2',
+        serializer=DictNewsSerializer()
+    )
+
+)
