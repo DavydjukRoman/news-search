@@ -3,6 +3,7 @@ version: '3.2'
 networks:
   elk:
     driver: bridge
+    name: elk
 
 services:
   elasticsearch:

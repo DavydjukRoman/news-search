@@ -1,0 +1,20 @@
+version: "2.1"
+
+networks:
+  elk:
+    external:
+      name: elk
+
+services:
+
+  es-initializer:
+    build:
+      context: .
+    environment:
+      ES_HOST: elasticsearch
+      ES_PORT: 9200
+    command: python loader/initializer.py
+    volumes:
+      - .:/app
+    networks:
+      - elk

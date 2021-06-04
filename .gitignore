@@ -132,3 +132,4 @@ dmypy.json
 /elk/elasticsearch/data/
 .idea/
 
+/db/News_Category_Dataset_v2.json
