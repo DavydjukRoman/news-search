@@ -1,5 +1,11 @@
 version: "2.1"
 
+
+networks:
+  elk:
+    external:
+      name: elk
+
 services:
   news-search-app:
     build:
@@ -12,3 +18,5 @@ services:
       - ./news-search-app/:/app
     ports:
       - 5000:5000
+    networks:
+      - elk

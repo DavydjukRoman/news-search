@@ -1,7 +1,5 @@
 import os
 
-from loader.domain.entities import News
-
 from loader.infrastructure.serializers import DictNewsSerializer
 from loader.infrastructure.deserialziers import JsonNewsDeserializer
 from loader.infrastructure.sources import FilesNewsSource
@@ -25,13 +23,13 @@ if __name__ == "__main__":
 
     )
 
-from logging import getLogger
-
-
-logger = getLogger("my logger")
-
-logger.info("test")
-logger.debug("test")
-logger.exception(e)
-logger.warning("hzz")
-logger.critical("pizdec")
+# from logging import getLogger
+#
+#
+# logger = getLogger("my logger")
+#
+# logger.info("test")
+# logger.debug("test")
+# logger.exception(e)
+# logger.warning("hzz")
+# logger.critical("pizdec")
