@@ -7,7 +7,7 @@
     <link rel="icon" href="http://obj-cache.cloud.ruanbekker.com/favicon.ico">
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
 
-    <title>Bookmarks Search</title>
+    <title>News Search</title>
 
 </head>
 <body>
@@ -17,13 +17,13 @@
         <div style="font-family: 'Pacifico', cursive;">
             <p>
             <center>
-                <font size="8">Search for Blog Posts</font>
+                <font size="8">Search for news</font>
             </center>
             </p>
         </div>
     </div>
 
-    <form action="/search/results" method="post">
+    <form action="/results" method="post">
         <div class="input-group">
             <input type="text" class="form-control input-lg" name="input" placeholder="Search" autofocus>
             <div class="input-group-btn">
@@ -35,7 +35,7 @@
     </form>
 
     <center>
-        <h1>Results: ({{ res['hits']['total'] }}) </h1>
+        <h1>Results: {{ total['value'] }} hits</h1>
     </center>
 
     <table class="table">

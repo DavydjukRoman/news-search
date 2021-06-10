@@ -12,5 +12,5 @@ class DictNewsSerializer(NewsSerializer):
             'authors': news.authors,
             'link': news.link,
             'short_description': news.short_description,
-            'date': news.date.isoformat(),
+            'date': news.date,
         }
